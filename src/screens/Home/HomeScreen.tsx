@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { HomeHeader } from '../../components/HomeHeader';
 import { SectionHeader } from '../../components/SectionHeader';
 import { SongCard } from '../../components/SongCard';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { colors } from '../../theme/colors';
-import { spacing, typography } from '../../theme/spacing';
+import { spacing } from '../../theme/spacing';
+import { artistService } from '../../services/artistService';
+import { songService } from '../../services/songService';
+import { Artist } from '../../types/artist';
+import { Song } from '../../types/song';
 
 // Dummy Data
 const CATEGORIES = ['Suggested', 'Songs', 'Artists', 'Albums', 'Favorites'];
@@ -16,20 +20,62 @@ const RECENTLY_PLAYED = [
   { id: '3', title: 'Save Your Tears', artist: 'The Weeknd', image: require('../../../assets/icon.png') },
 ];
 
-const ARTISTS = [
-  { id: '1', name: 'Ariana Grande', image: require('../../../assets/icon.png') },
-  { id: '2', name: 'The Weeknd', image: require('../../../assets/icon.png') },
-  { id: '3', name: 'Acidrap', image: require('../../../assets/icon.png') },
-];
-
-const MOST_PLAYED = [
-  { id: '1', title: 'Blue Mood', artist: 'Artist 1', image: require('../../../assets/icon.png') },
-  { id: '2', title: 'Galaxy', artist: 'Artist 2', image: require('../../../assets/icon.png') },
-  { id: '3', title: 'Portrait', artist: 'Artist 3', image: require('../../../assets/icon.png') },
-];
+// Sample Artist IDs for testing 
+const SAMPLE_ARTIST_IDS = ['459320', '464656', '456269', '485956', '568565'];
+// Sample Song ID for suggestions (Using 'yDeAS8Eh' as requested)
+const SEED_SONG_ID = 'yDeAS8Eh';
 
 const HomeScreen = () => {
   const [activeCategory, setActiveCategory] = useState('Suggested');
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [mostPlayedSongs, setMostPlayedSongs] = useState<Song[]>([]);
+  const [recentlyPlayedSongs, setRecentlyPlayedSongs] = useState<Song[]>([]);
+  const [loadingArtists, setLoadingArtists] = useState(true);
+  const [loadingSongs, setLoadingSongs] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch Artists
+      setLoadingArtists(true);
+      const artistsData = await artistService.getMultipleArtists(SAMPLE_ARTIST_IDS);
+      setArtists(artistsData);
+      setLoadingArtists(false);
+
+      // Fetch Most Played (using Top Songs from fetched artists as a fallback for 'Suggested')
+      // Since the suggestions API is erroring, we will display the top songs of the loaded artists
+      const allTopSongs: Song[] = [];
+      artistsData.forEach(artist => {
+        if (artist.topSongs) {
+          allTopSongs.push(...artist.topSongs);
+        }
+      });
+      // Shuffle or just pick the first few
+      const shuffledTopSongs = [...allTopSongs].sort(() => 0.5 - Math.random());
+      setMostPlayedSongs(shuffledTopSongs.slice(0, 10)); // Display top 10 songs from these artists
+      setLoadingSongs(false);
+
+      // Fetch Recently Played (Random 5 songs from available top songs to ensure validity)
+      // We will pick 5 random IDs from the shuffled list (different from most played if possible, or same)
+      const recentPool = shuffledTopSongs.slice(10, 20).length > 0 ? shuffledTopSongs.slice(10, 20) : shuffledTopSongs.slice(0, 5);
+      // Ensure we have at least 5 IDs if possible
+      const recentIdsToFetch = recentPool.slice(0, 5).map(song => song.id);
+
+      // If we don't have enough dynamic IDs, append some hardcoded ones that are known to work
+      const hardcodedIds = ['3IoDK8qI', 'yDeAS8Eh', '5GjH_13K', 'ZMcM9o8H', 'Mgqhq94a'];
+      while (recentIdsToFetch.length < 5) {
+        const nextId = hardcodedIds.shift();
+        if (nextId) recentIdsToFetch.push(nextId);
+        else break;
+      }
+
+      if (recentIdsToFetch.length > 0) {
+        const recentSongsData = await songService.getSongsByIds(recentIdsToFetch);
+        setRecentlyPlayedSongs(recentSongsData);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const renderCategory = ({ item }: { item: string }) => (
     <Text
@@ -57,22 +103,18 @@ const HomeScreen = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesList}
         />
-        <View style={styles.activeIndicatorContainer}>
-          {/* Simple indicator logic could go here, but implementing full tab logic is complex without a library */}
-          {/* For now we stick to text styling */}
-        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Recently Played */}
         <SectionHeader title="Recently Played" onSeeAll={() => { }} />
         <FlatList
-          data={RECENTLY_PLAYED}
+          data={recentlyPlayedSongs}
           renderItem={({ item }) => (
             <SongCard
-              title={item.title}
-              artist={item.artist}
-              image={item.image}
+              title={item.name}
+              artist={item.artists.primary[0]?.name || 'Unknown Artist'}
+              image={{ uri: item.image[2]?.url || item.image[0]?.url }}
             />
           )}
           keyExtractor={(item) => item.id}
@@ -83,37 +125,45 @@ const HomeScreen = () => {
 
         {/* Artists */}
         <SectionHeader title="Artists" onSeeAll={() => { }} />
-        <FlatList
-          data={ARTISTS}
-          renderItem={({ item }) => (
-            <ArtistAvatar
-              name={item.name}
-              image={item.image}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalList}
-        />
+        {loadingArtists ? (
+          <ActivityIndicator size="small" color={colors.primary} style={{ margin: spacing.m }} />
+        ) : (
+          <FlatList
+            data={artists}
+            renderItem={({ item }) => (
+              <ArtistAvatar
+                name={item.name}
+                image={{ uri: item.image[2]?.url || item.image[0]?.url }}
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+          />
+        )}
 
         {/* Most Played */}
         <SectionHeader title="Most Played" onSeeAll={() => { }} />
-        <FlatList
-          data={MOST_PLAYED}
-          renderItem={({ item }) => (
-            <SongCard
-              title={item.title}
-              artist={item.artist}
-              image={item.image}
-              variant="large"
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontalList}
-        />
+        {loadingSongs ? (
+          <ActivityIndicator size="small" color={colors.primary} style={{ margin: spacing.m }} />
+        ) : (
+          <FlatList
+            data={mostPlayedSongs}
+            renderItem={({ item }) => (
+              <SongCard
+                title={item.name}
+                artist={item.artists.primary[0]?.name || 'Unknown Artist'}
+                image={{ uri: item.image[2]?.url || item.image[0]?.url }}
+                variant="large"
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+          />
+        )}
 
         {/* Bottom padding for tab bar */}
         <View style={{ height: 100 }} />

@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography, spacing } from '../theme/spacing';
 
 export const HomeHeader = () => {
+    const insets = useSafeAreaInsets();
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top + spacing.s }]}>
             <View style={styles.leftContainer}>
                 <Ionicons name="musical-notes" size={32} color={colors.primary} />
                 <Text style={styles.title}>Mume</Text>
@@ -24,7 +27,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.m,
-        paddingVertical: spacing.s,
+        paddingBottom: spacing.s,
         backgroundColor: colors.background,
     },
     leftContainer: {

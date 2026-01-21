@@ -28,6 +28,7 @@ export interface Artist {
     availableLanguages: string[];
     isRadioPresent: boolean | null;
     topSongs: import('./song').Song[];
+    topAlbums?: any[]; // Simplified for now as we just need count
 }
 
 export interface ArtistResponse {

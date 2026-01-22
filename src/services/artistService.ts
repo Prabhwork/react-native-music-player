@@ -61,5 +61,23 @@ export const artistService = {
             console.error('Error fetching artist songs:', error);
             return [];
         }
+    },
+
+    searchArtists: async (query: string, limit: number = 20): Promise<Artist[]> => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/search/artists`, {
+                params: { query, limit },
+            });
+            if (response.data.success) {
+                // Cast to any to handle potential structural differences or missing types
+                const responseData = response.data.data as any;
+                // It might be nested in 'results' or direct array, similar to songs
+                return responseData.results || responseData;
+            }
+            return [];
+        } catch (error) {
+            console.error('Error searching artists:', error);
+            return [];
+        }
     }
 };

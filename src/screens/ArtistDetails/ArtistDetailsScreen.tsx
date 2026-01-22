@@ -11,6 +11,8 @@ import { Song } from '../../types/song';
 import { colors } from '../../theme/colors';
 import { spacing, typography } from '../../theme/spacing';
 
+import { ArtistOptionsModal } from '../../components/ArtistOptionsModal';
+
 const ArtistDetailsScreen = () => {
     const route = useRoute();
     const navigation = useNavigation();
@@ -22,6 +24,7 @@ const ArtistDetailsScreen = () => {
     const [songs, setSongs] = useState<Song[]>([]);
     const [loading, setLoading] = useState(!artistData);
     const { playSong, currentSong, isPlaying, togglePlayPause } = usePlayerStore();
+    const [isOptionsVisible, setOptionsVisible] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -125,6 +128,9 @@ const ArtistDetailsScreen = () => {
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                             <Ionicons name="arrow-back" size={24} color={colors.text} />
                         </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setOptionsVisible(true)} style={styles.backButton}>
+                            <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.artistInfoContainer}>
@@ -164,6 +170,11 @@ const ArtistDetailsScreen = () => {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
             />
+            <ArtistOptionsModal
+                visible={isOptionsVisible}
+                onClose={() => setOptionsVisible(false)}
+                artist={artist}
+            />
         </View>
     );
 };
@@ -197,7 +208,10 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: spacing.m,
+        right: spacing.m,
         zIndex: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     backButton: {
         padding: spacing.s,

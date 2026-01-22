@@ -21,6 +21,11 @@ export default function AppNavigator() {
         options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen name="AlbumDetails" component={AlbumDetailsScreen} />
+      <Stack.Screen
+        name="Search"
+        component={require('../screens/Search/SearchScreen').default}
+        options={{ animation: 'fade_from_bottom' }}
+      />
     </Stack.Navigator>
   );
 }

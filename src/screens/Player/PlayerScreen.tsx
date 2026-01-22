@@ -23,6 +23,11 @@ const PlayerScreen = () => {
         return `${minutes}:${Number(seconds) < 10 ? '0' : ''}${seconds}`;
     };
 
+    const seekBy = (amount: number) => {
+        const newPosition = position + amount;
+        seek(Math.max(0, Math.min(newPosition, duration)));
+    };
+
     if (!currentSong) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -85,8 +90,10 @@ const PlayerScreen = () => {
 
                 {/* Controls */}
                 <View style={styles.controlsContainer}>
-                    <TouchableOpacity>
-                        <Ionicons name="shuffle" size={24} color={colors.textSecondary} />
+                    {/* -10s Button */}
+                    <TouchableOpacity onPress={() => seekBy(-10000)} style={styles.auditButton}>
+                        <Ionicons name="refresh" size={24} color={colors.text} />
+                        <Text style={styles.auditText}>10s</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={playPrevious}>
@@ -101,15 +108,18 @@ const PlayerScreen = () => {
                         <Ionicons name="play-skip-forward" size={36} color={colors.text} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <Ionicons name="repeat" size={24} color={colors.textSecondary} />
+                    {/* +10s Button */}
+                    <TouchableOpacity onPress={() => seekBy(10000)} style={styles.auditButton}>
+                        <Ionicons name="arrow-forward" size={24} color={colors.text} />
+                        <Text style={styles.auditText}>10s</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Bottom Actions */}
                 <View style={styles.bottomActions}>
-                    <Ionicons name="timer-outline" size={24} color={colors.text} />
-                    <Ionicons name="share-social-outline" size={24} color={colors.text} />
+                    <Ionicons name="shuffle" size={24} color={colors.textSecondary} />
+                    <Ionicons name="repeat" size={24} color={colors.textSecondary} />
+                    <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
                 </View>
             </View>
         </View>
@@ -206,7 +216,17 @@ const styles = StyleSheet.create({
     bottomActions: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        width: '50%',
+        width: '60%', // Wider for 3 icons
+        marginTop: spacing.s,
+    },
+    auditButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    auditText: {
+        fontSize: 10,
+        color: colors.textSecondary,
+        fontWeight: 'bold',
     },
 });
 

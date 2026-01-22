@@ -46,5 +46,22 @@ export const songService = {
             console.error('Error fetching multiple songs:', error);
             return [];
         }
+    },
+
+    getHindiSongs: async (page: number = 2, limit: number = 100): Promise<Song[]> => {
+        try {
+            const response = await axios.get<SongResponse>(`${API_BASE_URL}/search/songs`, {
+                params: { query: 'hindi', page, limit },
+            });
+            if (response.data.success) {
+                // Cast to any to handle potential 'results' nesting in search response
+                const responseData = response.data.data as any;
+                return responseData.results || responseData;
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching Hindi songs:', error);
+            return [];
+        }
     }
 };

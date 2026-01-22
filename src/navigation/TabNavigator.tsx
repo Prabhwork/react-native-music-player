@@ -19,13 +19,13 @@ const TabNavigator = () => {
                 tabBarStyle: {
                     backgroundColor: colors.background,
                     borderTopWidth: 0,
-                    elevation: 10, // Add shadow for better visibility
+                    elevation: 10,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: -2 },
+                    shadowOffset: { width: 0, height: -2 }, // Shadow upwards
                     shadowOpacity: 0.1,
                     shadowRadius: 4,
-                    height: 90, // Increased height for better look
-                    paddingTop: 10,
+                    height: 90, // Taller to accommodate lift
+                    paddingBottom: 30, // Lift icons up by adding padding at bottom
                 },
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName: keyof typeof Ionicons.glyphMap;

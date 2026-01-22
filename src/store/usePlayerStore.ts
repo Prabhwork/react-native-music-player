@@ -11,8 +11,13 @@ interface PlayerState {
     duration: number;
     position: number;
 
+    recentlyPlayed: Song[];
+    setRecentlyPlayed: (songs: Song[]) => void;
+
     initializeAudio: () => Promise<void>;
     playSong: (song: Song, queue: Song[]) => Promise<void>;
+    playSongNext: (song: Song) => Promise<void>;
+    addToQueue: (song: Song) => Promise<void>;
     togglePlayPause: () => Promise<void>;
     playNext: () => Promise<void>;
     playPrevious: () => Promise<void>;
@@ -25,6 +30,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     isPlaying: false,
     sound: null,
     queue: [],
+    recentlyPlayed: [],
+    setRecentlyPlayed: (songs: Song[]) => set({ recentlyPlayed: songs }),
     currentIndex: -1,
     duration: 0,
     position: 0,
@@ -42,10 +49,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     },
 
     playSong: async (song: Song, queue: Song[]) => {
-        const { sound } = get();
+        const { sound, recentlyPlayed } = get();
         if (sound) {
             await sound.unloadAsync();
         }
+
+        // Add to Recently Played (limit 20, unique)
+        const newRecentlyPlayed = [song, ...recentlyPlayed.filter(s => s.id !== song.id)].slice(0, 20);
 
         // Find URL - prefer 320kbps, then 96kbps
         // Based on API: downloadUrl array
@@ -72,6 +82,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
                 sound: newSound,
                 currentSong: song,
                 queue,
+                recentlyPlayed: newRecentlyPlayed,
                 currentIndex: index,
                 isPlaying: true,
             });
@@ -128,5 +139,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
                 get().playNext();
             }
         }
-    }
+    },
+
+    playSongNext: async (song: Song) => {
+        const { queue, currentIndex } = get();
+        // Insert after current index
+        const newQueue = [...queue];
+        const insertIndex = currentIndex + 1;
+        newQueue.splice(insertIndex, 0, song);
+        set({ queue: newQueue });
+    },
+
+    addToQueue: async (song: Song) => {
+        const { queue } = get();
+        set({ queue: [...queue, song] });
+    },
 }));
